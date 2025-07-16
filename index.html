@@ -114,8 +114,7 @@
       if (user && pass && rpname) {
         currentUser = { username: user, rpname: rpname };
 
-        const team = teamData[user];
-        if (team && (!team.members || !team.members[user])) {
+        if (!teamData[user] || !teamData[user].members || !teamData[user].members[user]) {
           teamData[user] = null;
         }
 
@@ -166,18 +165,21 @@
 
     function joinTeam() {
       const code = document.getElementById("join-code").value;
+      let found = false;
       for (let user in teamData) {
         const team = teamData[user];
         if (team && team.code === code) {
+          if (!team.members) team.members = {};
           team.members[currentUser.username] = currentUser;
           teamData[currentUser.username] = team;
           updateTeamDisplay();
           saveData();
           alert("Joined team!");
-          return;
+          found = true;
+          break;
         }
       }
-      alert("Team code not found.");
+      if (!found) alert("Team code not found.");
     }
 
     function leaveTeam() {
