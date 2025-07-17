@@ -5,6 +5,7 @@ body, html {
   background-color: #1b1b1b;
 }
 
+/* Background Gradient */
 .background {
   height: 100vh;
   background: linear-gradient(to right, red, blue);
@@ -14,6 +15,7 @@ body, html {
   padding: 20px;
 }
 
+/* Tablet Styling */
 .tablet {
   width: 700px;
   background: #001f3f;
@@ -21,10 +23,10 @@ body, html {
   border: 6px solid #000;
   padding: 20px;
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
-  position: relative;
   color: #fff;
 }
 
+/* Inputs and Buttons */
 input, textarea, button {
   display: block;
   width: 100%;
@@ -55,6 +57,7 @@ button:hover {
   background-color: #e0a800;
 }
 
+/* Navigation Buttons */
 nav {
   display: flex;
   justify-content: space-around;
@@ -66,31 +69,46 @@ nav {
 nav button {
   background-color: #0056b3;
   color: white;
-  position: relative;
 }
 
-#notif-button.has-unread::after {
-  content: '';
+/* Notification Button Container */
+.notif-button-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.notif-button-wrapper button {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #0056b3;
+  color: white;
+}
+
+.notif-dot {
   position: absolute;
-  top: 5px;
+  top: 8px;
   right: 10px;
   width: 10px;
   height: 10px;
   background: red;
   border-radius: 50%;
+  display: none;
 }
 
+/* Tabs */
 .tab {
   display: none;
-  color: #fff;
 }
 
-#notifications-list {
+/* Notifications */
+#notification-list {
   list-style-type: disc;
   padding-left: 20px;
   color: #fff;
 }
 
+/* Team Section */
 #team-interface {
   display: flex;
   flex-direction: column;
@@ -107,14 +125,15 @@ nav button {
   padding-top: 10px;
 }
 
-#report-output, #team-reports {
+/* Report Display */
+#report-list {
   background-color: #002a4d;
   padding: 10px;
   border-radius: 5px;
   margin-top: 10px;
 }
 
-.report-entry {
+#report-list li {
   border-bottom: 1px solid #555;
   padding: 5px 0;
   color: #fff;
@@ -122,26 +141,4 @@ nav button {
 
 h3, h4 {
   color: #ffc107;
-}
-
-.notif-button-wrapper {
-  position: relative;
-  flex: 1;
-  display: flex;
-}
-
-.notif-button-wrapper button {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.notif-dot {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  width: 10px;
-  height: 10px;
-  background: red;
-  border-radius: 50%;
-  display: none;
 }
