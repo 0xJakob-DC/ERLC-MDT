@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MDT System</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
@@ -41,9 +39,7 @@
       display: none;
       margin-top: 20px;
     }
-    .section.active {
-      display: block;
-    }
+    .section.active { display: block; }
     input, textarea {
       width: 100%;
       padding: 10px;
@@ -75,25 +71,22 @@
       font-weight: bold;
       margin: 15px 0;
     }
-    .back-btn {
-      margin-top: 10px;
-      background: #555;
-    }
+    .back-btn { margin-top: 10px; background: #555; }
   </style>
 </head>
 <body>
   <div id="app">
-    <!-- LOGIN SECTION -->
-    <div id="loginSection">
-      <h3>Login</h3>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="section active">
+      <h2>Login</h2>
       <input id="loginUsername" placeholder="Username">
       <input id="loginPassword" type="password" placeholder="Password">
       <input id="loginRPName" placeholder="RP Name">
       <button onclick="login()">Log In</button>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="mainApp" style="display: none;">
+    <!-- Main App -->
+    <div id="mainApp" style="display:none;">
       <div style="text-align: center;">
         <button class="tab-btn" onclick="showTab('teamsTab')">Teams</button>
         <button class="tab-btn" onclick="showTab('settingsTab')">Settings</button>
@@ -119,6 +112,7 @@
           <button onclick="showTab('viewPlayersTab')">View Players</button>
           <button onclick="showTab('fileReportTab')">File Incident Report</button>
           <button onclick="showTab('viewReportsTab')">View Incident Reports</button>
+          <button onclick="leaveTeam()">Leave Team</button>
         </div>
       </div>
 
@@ -141,14 +135,14 @@
         <button class="back-btn" onclick="showTab('teamsTab')">Back</button>
       </div>
 
-      <!-- View Incident Reports -->
+      <!-- View Reports -->
       <div id="viewReportsTab" class="section">
         <h3>Incident Reports</h3>
         <div id="reportsList"></div>
         <button class="back-btn" onclick="showTab('teamsTab')">Back</button>
       </div>
 
-      <!-- Settings Tab -->
+      <!-- Settings -->
       <div id="settingsTab" class="section">
         <h3>Settings</h3>
         <p><strong>Username:</strong> <span id="usernameDisplay"></span></p>
@@ -160,38 +154,59 @@
 
   <script>
     const tabs = ['teamsTab', 'settingsTab', 'viewPlayersTab', 'fileReportTab', 'viewReportsTab'];
+    let currentUser = null;
     let currentTeam = null;
     let teamCode = null;
-    const players = [];
-    const reports = {};
+    let reports = {};
+    let players = [];
 
     function showTab(tabId) {
       tabs.forEach(id => document.getElementById(id).classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
+      if (tabId === 'viewPlayersTab') renderPlayers();
+      if (tabId === 'viewReportsTab') renderReports();
     }
 
     function login() {
-      const username = document.getElementById("loginUsername").value.trim();
-      const password = document.getElementById("loginPassword").value.trim();
-      const rpName = document.getElementById("loginRPName").value.trim();
-      if (!username || !password || !rpName) return alert("Fill in all login fields!");
-      localStorage.setItem("mdtLoggedIn", "true");
-      localStorage.setItem("mdtUsername", username);
-      localStorage.setItem("mdtRPName", rpName);
-      document.getElementById("usernameDisplay").textContent = username;
-      document.getElementById("rpNameDisplay").textContent = rpName;
-      document.getElementById("loginSection").style.display = "none";
-      document.getElementById("mainApp").style.display = "block";
-      loadSavedTeam();
+      const user = document.getElementById('loginUsername').value.trim();
+      const pass = document.getElementById('loginPassword').value.trim();
+      const rp = document.getElementById('loginRPName').value.trim();
+      if (!user || !pass || !rp) return alert('Fill in all fields');
+      currentUser = user;
+      localStorage.setItem('mdtUser', JSON.stringify({ user, pass, rp }));
+      loadUserData();
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('usernameDisplay').innerText = user;
+      document.getElementById('rpNameDisplay').innerText = rp;
+    }
+
+    function loadUserData() {
+      const saved = localStorage.getItem(`teamData_${currentUser}`);
+      if (saved) {
+        const data = JSON.parse(saved);
+        currentTeam = data.teamName;
+        teamCode = data.teamCode;
+        reports = data.reports || {};
+        players = data.players || [];
+        updateTeamUI();
+      }
+    }
+
+    function saveUserData() {
+      const data = {
+        teamName: currentTeam,
+        teamCode: teamCode,
+        reports: reports,
+        players: players
+      };
+      localStorage.setItem(`teamData_${currentUser}`, JSON.stringify(data));
     }
 
     function logout() {
-      localStorage.removeItem("mdtLoggedIn");
-      localStorage.removeItem("mdtUsername");
-      localStorage.removeItem("mdtRPName");
-      localStorage.removeItem("mdtTeamName");
-      localStorage.removeItem("mdtTeamCode");
-      location.reload();
+      currentUser = null;
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'block';
     }
 
     function createTeam() {
@@ -199,18 +214,33 @@
       if (!name) return alert('Enter a team name.');
       currentTeam = name;
       teamCode = Math.random().toString(36).substr(2, 6).toUpperCase();
-      players.push({ username: localStorage.getItem("mdtUsername"), rpName: localStorage.getItem("mdtRPName") });
-      reports[teamCode] = [];
+      players = [{ username: currentUser, rpName: document.getElementById('rpNameDisplay').innerText }];
+      reports = { [teamCode]: [] };
       updateTeamUI();
+      saveUserData();
     }
 
     function joinTeam() {
       const code = document.getElementById('teamCodeInput').value.trim().toUpperCase();
-      if (!reports[code]) return alert('Team code not found.');
-      currentTeam = "Joined Team";
+      const saved = JSON.parse(localStorage.getItem(`sharedTeam_${code}`));
+      if (!saved) return alert('Team code not found.');
+      currentTeam = saved.teamName;
       teamCode = code;
-      players.push({ username: localStorage.getItem("mdtUsername"), rpName: localStorage.getItem("mdtRPName") });
+      players = saved.players || [];
+      reports = { [teamCode]: saved.reports || [] };
+      players.push({ username: currentUser, rpName: document.getElementById('rpNameDisplay').innerText });
       updateTeamUI();
+      saveUserData();
+    }
+
+    function leaveTeam() {
+      currentTeam = null;
+      teamCode = null;
+      players = [];
+      reports = {};
+      document.getElementById('teamInputs').style.display = 'block';
+      document.getElementById('teamInfo').style.display = 'none';
+      saveUserData();
     }
 
     function updateTeamUI() {
@@ -218,21 +248,7 @@
       document.getElementById('teamInfo').style.display = 'block';
       document.getElementById('teamNameDisplay').innerText = currentTeam;
       document.getElementById('teamCodeDisplay').innerText = teamCode;
-      localStorage.setItem("mdtTeamName", currentTeam);
-      localStorage.setItem("mdtTeamCode", teamCode);
-    }
-
-    function submitReport() {
-      if (!teamCode) return alert('Join a team first.');
-      const user = document.getElementById('reportUser').value;
-      const age = document.getElementById('reportAge').value;
-      const gender = document.getElementById('reportGender').value;
-      const date = document.getElementById('reportDate').value;
-      const text = document.getElementById('reportText').value;
-      const report = `Reported by: ${localStorage.getItem("mdtUsername")} / ${localStorage.getItem("mdtRPName")}<br>User: ${user}<br>Age: ${age}<br>Gender: ${gender}<br>Date: ${date}<br>Report: ${text}<hr>`;
-      reports[teamCode].push(report);
-      document.getElementById('reportText').value = '';
-      alert('Report submitted.');
+      localStorage.setItem(`sharedTeam_${teamCode}`, JSON.stringify({ teamName: currentTeam, players, reports: reports[teamCode] }));
     }
 
     function renderPlayers() {
@@ -245,36 +261,34 @@
       });
     }
 
+    function submitReport() {
+      if (!teamCode) return alert('Join a team first.');
+      const user = document.getElementById('reportUser').value;
+      const age = document.getElementById('reportAge').value;
+      const gender = document.getElementById('reportGender').value;
+      const date = document.getElementById('reportDate').value;
+      const text = document.getElementById('reportText').value;
+      const report = `Reported by: ${currentUser}<br>User: ${user}<br>Age: ${age}<br>Gender: ${gender}<br>Date: ${date}<br>Report: ${text}<hr>`;
+      reports[teamCode].push(report);
+      document.getElementById('reportText').value = '';
+      alert('Report submitted.');
+      saveUserData();
+    }
+
     function renderReports() {
       const list = document.getElementById('reportsList');
       list.innerHTML = reports[teamCode]?.join('') || 'No reports.';
     }
 
-    function loadSavedTeam() {
-      const name = localStorage.getItem("mdtTeamName");
-      const code = localStorage.getItem("mdtTeamCode");
-      if (name && code) {
-        currentTeam = name;
-        teamCode = code;
-        players.push({ username: localStorage.getItem("mdtUsername"), rpName: localStorage.getItem("mdtRPName") });
-        reports[teamCode] = reports[teamCode] || [];
-        updateTeamUI();
-      }
-    }
-
     window.onload = () => {
-      if (localStorage.getItem("mdtLoggedIn") === "true") {
-        document.getElementById("loginSection").style.display = "none";
-        document.getElementById("mainApp").style.display = "block";
-        document.getElementById("usernameDisplay").textContent = localStorage.getItem("mdtUsername");
-        document.getElementById("rpNameDisplay").textContent = localStorage.getItem("mdtRPName");
-        loadSavedTeam();
+      const saved = localStorage.getItem('mdtUser');
+      if (saved) {
+        const user = JSON.parse(saved);
+        document.getElementById('loginUsername').value = user.user;
+        document.getElementById('loginPassword').value = user.pass;
+        document.getElementById('loginRPName').value = user.rp;
       }
     };
-
-    // Render player/reports on tab open
-    document.getElementById('viewPlayersTab').addEventListener('click', renderPlayers);
-    document.getElementById('viewReportsTab').addEventListener('click', renderReports);
   </script>
 </body>
 </html>
