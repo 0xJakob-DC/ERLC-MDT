@@ -1,41 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ERLC MDT</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .notif-button-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .notif-dot {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      display: none;
+    }
+
+    .notif-button-wrapper.has-unread .notif-dot {
+      display: block;
+    }
+
+    .invite-entry {
+      margin-bottom: 10px;
+      background-color: #003366;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .invite-entry button {
+      margin-top: 5px;
+      background-color: #28a745;
+      color: white;
+    }
+  </style>
 </head>
 <body>
   <div class="background">
     <div class="tablet">
       <div id="login-screen">
         <h2>MDT Login</h2>
-        <input type="text" id="login-username" placeholder="Username">
-        <input type="password" id="login-password" placeholder="Password">
-        <input type="text" id="login-rpname" placeholder="RP Name">
+        <input type="text" id="login-username" placeholder="Username" />
+        <input type="password" id="login-password" placeholder="Password" />
+        <input type="text" id="login-rpname" placeholder="RP Name" />
         <button onclick="login()">Login</button>
       </div>
 
       <div id="mdt" style="display: none;">
         <div id="menu" class="tab">
           <nav>
-            <button onclick="showTab('notifications')">Notifications</button>
+            <div class="notif-button-wrapper" id="notif-button">
+              <button onclick="showTab('notifications')">Notifications</button>
+              <span class="notif-dot"></span>
+            </div>
             <button onclick="showTab('settings')">Settings</button>
             <button onclick="showTab('team')">Team</button>
           </nav>
         </div>
 
-        <div id="team" class="tab" style="display:none;">
+        <div id="team" class="tab" style="display: none;">
           <button class="menu-btn" onclick="goToMenu()">Menu</button>
           <h3>Team</h3>
           <div id="team-interface">
             <div id="create-join-team-section">
               <h4>Create Team</h4>
-              <input type="text" id="team-name" placeholder="Team Name">
+              <input type="text" id="team-name" placeholder="Team Name" />
               <button onclick="createTeam()">Create Team</button>
               <h4>Join Team</h4>
-              <input type="text" id="join-code" placeholder="Enter Team Code">
+              <input type="text" id="join-code" placeholder="Enter Team Code" />
               <button onclick="joinTeam()">Join Team</button>
             </div>
 
@@ -43,7 +80,7 @@
               <h4>Your Team</h4>
               <p><strong>Team Name:</strong> <span id="display-team-name"></span></p>
               <p><strong>Team Code:</strong> <span id="display-team-code"></span></p>
-              <input type="text" id="invite-username" placeholder="Username to invite">
+              <input type="text" id="invite-username" placeholder="Username to invite" />
               <button onclick="inviteUser()">Send Invite</button>
               <button onclick="leaveTeam()">Leave Team</button>
               <button onclick="viewReports()">View Incident Reports</button>
@@ -70,17 +107,18 @@
         <div id="notifications" class="tab" style="display:none;">
           <button class="menu-btn" onclick="goToMenu()">Menu</button>
           <h3>Notifications</h3>
+          <button onclick="clearNotifications()">Clear Notifications</button>
           <ul id="notification-list"></ul>
         </div>
 
         <div id="file-report" class="tab" style="display:none;">
           <button class="menu-btn" onclick="goToMenu()">Menu</button>
           <h3>File Incident Report</h3>
-          <input type="text" id="report-name" placeholder="Incident Name">
-          <input type="text" id="report-user" placeholder="Name (Username)">
-          <input type="text" id="report-date" placeholder="Date">
-          <input type="text" id="report-age" placeholder="Age">
-          <input type="text" id="report-gender" placeholder="Gender">
+          <input type="text" id="report-name" placeholder="Incident Name" />
+          <input type="text" id="report-user" placeholder="Name (Username)" />
+          <input type="text" id="report-date" placeholder="Date" />
+          <input type="text" id="report-age" placeholder="Age" />
+          <input type="text" id="report-gender" placeholder="Gender" />
           <textarea id="report-description" placeholder="Incident Report..."></textarea>
           <button onclick="fileReport()">Submit Report</button>
         </div>
@@ -95,16 +133,22 @@
   </div>
 
   <script>
-    let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
     let teamData = JSON.parse(localStorage.getItem('teamData')) || {};
     let reports = JSON.parse(localStorage.getItem('reports')) || [];
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
 
     function saveData() {
-      localStorage.setItem('notifications', JSON.stringify(notifications));
       localStorage.setItem('teamData', JSON.stringify(teamData));
       localStorage.setItem('reports', JSON.stringify(reports));
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    }
+
+    function getUserNotifications(username) {
+      return JSON.parse(localStorage.getItem('notifications_' + username)) || [];
+    }
+
+    function saveUserNotifications(username, notifs) {
+      localStorage.setItem('notifications_' + username, JSON.stringify(notifs));
     }
 
     function login() {
@@ -113,11 +157,6 @@
       const rpname = document.getElementById("login-rpname").value;
       if (user && pass && rpname) {
         currentUser = { username: user, rpname: rpname };
-
-        if (!teamData[user] || !teamData[user].members || !teamData[user].members[user]) {
-          teamData[user] = null;
-        }
-
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("mdt").style.display = "block";
         document.getElementById("show-username").textContent = user;
@@ -125,6 +164,7 @@
         updateTeamDisplay();
         showTab('menu');
         saveData();
+        showNotifications();
       } else {
         alert("Please fill in all fields.");
       }
@@ -141,6 +181,7 @@
       document.querySelectorAll('.tab').forEach(tab => tab.style.display = 'none');
       document.getElementById(tabId).style.display = 'block';
       if (tabId === 'player-view') showPlayerManagement();
+      if (tabId === 'notifications') showNotifications();
     }
 
     function goToMenu() {
@@ -157,45 +198,41 @@
           [currentUser.username]: currentUser
         }
       };
-      teamData[currentUser.username] = team;
+      teamData[code] = team;
+      currentUser.teamCode = code;
       updateTeamDisplay();
       saveData();
       alert("Team created!");
     }
 
     function joinTeam() {
-      const code = document.getElementById("join-code").value;
-      let found = false;
-      for (let user in teamData) {
-        const team = teamData[user];
-        if (team && team.code === code) {
-          if (!team.members) team.members = {};
-          team.members[currentUser.username] = currentUser;
-          teamData[currentUser.username] = team;
-          updateTeamDisplay();
-          saveData();
-          alert("Joined team!");
-          found = true;
-          break;
-        }
+      const code = document.getElementById("join-code").value.toUpperCase();
+      const team = teamData[code];
+      if (team) {
+        team.members[currentUser.username] = currentUser;
+        currentUser.teamCode = code;
+        updateTeamDisplay();
+        saveData();
+        alert("Joined team!");
+      } else {
+        alert("Team code not found.");
       }
-      if (!found) alert("Team code not found.");
     }
 
     function leaveTeam() {
-      const team = teamData[currentUser.username];
-      if (team && team.members[currentUser.username]) {
-        delete team.members[currentUser.username];
+      const code = currentUser.teamCode;
+      if (code && teamData[code]?.members[currentUser.username]) {
+        delete teamData[code].members[currentUser.username];
+        currentUser.teamCode = null;
+        updateTeamDisplay();
+        saveData();
       }
-      teamData[currentUser.username] = null;
-      updateTeamDisplay();
-      saveData();
     }
 
     function updateTeamDisplay() {
-      const user = currentUser.username;
-      const team = teamData[user];
-      if (team && team.members && team.members[user]) {
+      const code = currentUser.teamCode;
+      const team = teamData[code];
+      if (team && team.members[currentUser.username]) {
         document.getElementById("my-team").style.display = "block";
         document.getElementById("create-join-team-section").style.display = "none";
         document.getElementById("display-team-name").textContent = team.name;
@@ -208,17 +245,71 @@
 
     function inviteUser() {
       const username = document.getElementById("invite-username").value;
-      if (username) {
-        notifications.push(`${username} was invited to your team.`);
-        saveData();
+      const code = currentUser.teamCode;
+      if (username && code) {
+        const notifs = getUserNotifications(username);
+        notifs.push({
+          type: "invite",
+          message: `${currentUser.username} invited you to join their team.`,
+          code: code
+        });
+        saveUserNotifications(username, notifs);
         alert("Invitation sent!");
       }
     }
 
+    function showNotifications() {
+      const notifList = document.getElementById("notification-list");
+      const notifs = getUserNotifications(currentUser.username);
+      notifList.innerHTML = "";
+
+      const hasUnread = notifs.length > 0;
+      const notifBtn = document.getElementById("notif-button");
+      notifBtn.classList.toggle("has-unread", hasUnread);
+
+      notifs.forEach((notif, i) => {
+        const li = document.createElement("li");
+        if (notif.type === "invite") {
+          li.className = "invite-entry";
+          li.innerHTML = `
+            <p>${notif.message}</p>
+            <button onclick="acceptInvite('${notif.code}', ${i})">Join</button>
+          `;
+        } else {
+          li.textContent = notif.message || notif;
+        }
+        notifList.appendChild(li);
+      });
+    }
+
+    function acceptInvite(code, index) {
+      const team = teamData[code];
+      if (team) {
+        team.members[currentUser.username] = currentUser;
+        currentUser.teamCode = code;
+        updateTeamDisplay();
+        saveData();
+        let notifs = getUserNotifications(currentUser.username);
+        notifs.splice(index, 1);
+        saveUserNotifications(currentUser.username, notifs);
+        showNotifications();
+        alert("You joined the team!");
+        goToMenu();
+      } else {
+        alert("Team no longer exists.");
+      }
+    }
+
+    function clearNotifications() {
+      localStorage.removeItem('notifications_' + currentUser.username);
+      showNotifications();
+    }
+
     function showPlayerManagement() {
-      const team = teamData[currentUser.username];
+      const code = currentUser.teamCode;
+      const team = teamData[code];
       const container = document.getElementById("player-management");
-      container.innerHTML = '';
+      container.innerHTML = "";
       for (let member in team.members) {
         const rp = team.members[member].rpname;
         container.innerHTML += `<p>${member} / ${rp}</p>`;
@@ -232,7 +323,6 @@
       const age = document.getElementById("report-age").value;
       const gender = document.getElementById("report-gender").value;
       const desc = document.getElementById("report-description").value;
-
       reports.push({ name, user, date, age, gender, desc });
       saveData();
       alert("Incident report logged");

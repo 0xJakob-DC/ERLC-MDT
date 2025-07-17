@@ -5,7 +5,6 @@ body, html {
   background-color: #1b1b1b;
 }
 
-/* Background Gradient */
 .background {
   height: 100vh;
   background: linear-gradient(to right, red, blue);
@@ -15,7 +14,6 @@ body, html {
   padding: 20px;
 }
 
-/* Tablet Styling */
 .tablet {
   width: 700px;
   background: #001f3f;
@@ -27,7 +25,6 @@ body, html {
   color: #fff;
 }
 
-/* Inputs and Buttons */
 input, textarea, button {
   display: block;
   width: 100%;
@@ -58,7 +55,6 @@ button:hover {
   background-color: #e0a800;
 }
 
-/* Navigation Buttons */
 nav {
   display: flex;
   justify-content: space-around;
@@ -70,22 +66,31 @@ nav {
 nav button {
   background-color: #0056b3;
   color: white;
+  position: relative;
 }
 
-/* Tabs */
+#notif-button.has-unread::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  background: red;
+  border-radius: 50%;
+}
+
 .tab {
   display: none;
   color: #fff;
 }
 
-/* Notifications */
 #notifications-list {
   list-style-type: disc;
   padding-left: 20px;
   color: #fff;
 }
 
-/* Team Section */
 #team-interface {
   display: flex;
   flex-direction: column;
@@ -102,7 +107,6 @@ nav button {
   padding-top: 10px;
 }
 
-/* Report Display */
 #report-output, #team-reports {
   background-color: #002a4d;
   padding: 10px;
@@ -118,4 +122,26 @@ nav button {
 
 h3, h4 {
   color: #ffc107;
+}
+
+.notif-button-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.notif-button-wrapper button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.notif-dot {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  background: red;
+  border-radius: 50%;
+  display: none;
 }
